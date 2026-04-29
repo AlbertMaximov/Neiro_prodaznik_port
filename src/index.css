@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-deep: #1E3A8A;
+  --color-brand-light: #DBEAFE;
+  --color-brand-accent: #10B981;
+  --color-brand-graphite: #111827;
+
+  --font-sans: "Inter", "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-brand-graphite font-sans antialiased;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/80 backdrop-blur-sm border border-brand-light shadow-sm;
+}
+
+.chat-bubble-ai {
+  @apply bg-brand-light text-brand-deep rounded-2xl rounded-tl-none p-4 shadow-sm;
+}
+
+.chat-bubble-user {
+  @apply bg-brand-deep text-white rounded-2xl rounded-tr-none p-4 shadow-md;
+}
+
+.profile-field-update {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse-green {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(16, 185, 129, 0.1); }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-brand-deep/10 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-deep/20;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
