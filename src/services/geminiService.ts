@@ -61,7 +61,8 @@ ${JSON.stringify(ADDITIONAL_INFO, null, 2)}
 `;
 
 export async function getAIResponse(messages: Message[], currentProfile: CompanyProfile) {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-2.5-flash";
+  const maxRetries = 3;
   
   const prompt = `
 Current Company Profile: ${JSON.stringify(currentProfile)}
@@ -70,55 +71,65 @@ Conversation History: ${JSON.stringify(messages.map(m => ({ role: m.role, conten
 Analyze the last user message and respond according to your instructions.
 `;
 
-  try {
-    const response = await genAI.models.generateContent({
-      model,
-      contents: [{ parts: [{ text: prompt }] }],
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            text: { type: Type.STRING },
-            profileUpdate: { 
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                industry: { type: Type.STRING },
-                size: { type: Type.STRING },
-                region: { type: Type.STRING },
-                tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-                contacts: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    position: { type: Type.STRING },
-                    phone: { type: Type.STRING },
-                    email: { type: Type.STRING }
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await genAI.models.generateContent({
+        model,
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              text: { type: Type.STRING },
+              profileUpdate: { 
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  industry: { type: Type.STRING },
+                  size: { type: Type.STRING },
+                  region: { type: Type.STRING },
+                  tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  contacts: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      position: { type: Type.STRING },
+                      phone: { type: Type.STRING },
+                      email: { type: Type.STRING }
+                    }
                   }
                 }
-              }
+              },
+              recommendedSolutions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              confirmedSolutions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              nextStep: { type: Type.STRING }
             },
-            recommendedSolutions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            confirmedSolutions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            nextStep: { type: Type.STRING }
-          },
-          required: ["text", "profileUpdate", "recommendedSolutions", "confirmedSolutions", "nextStep"]
+            required: ["text", "profileUpdate", "recommendedSolutions", "confirmedSolutions", "nextStep"]
+          }
         }
-      }
-    });
+      });
 
-    return JSON.parse(response.text || "{}");
-  } catch (error) {
-    console.error("AI Error:", error);
-    return {
-      text: "I apologize, I encountered a technical issue. Could you please repeat that?",
-      profileUpdate: {},
-      recommendedSolutions: [],
-      confirmedSolutions: [],
-      nextStep: "Error Recovery"
-    };
+      return JSON.parse(response.text || "{}");
+    } catch (error: any) {
+      console.error(`AI Error on attempt ${attempt + 1}:`, error);
+      
+      const isOverloaded = error?.message?.includes('503') || error?.message?.includes('high demand') || error?.status === 503;
+      
+      if (attempt === maxRetries - 1 || !isOverloaded) {
+        return {
+          text: "Извините, сейчас сервер испытывает высокую нагрузку или возникла техническая ошибка. Пожалуйста, подождите немного и повторите ваш ответ.",
+          profileUpdate: {},
+          recommendedSolutions: [],
+          confirmedSolutions: [],
+          nextStep: "Ожидание"
+        };
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+    }
   }
 }
