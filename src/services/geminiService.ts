@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { CompanyProfile, Message, Solution } from "../types";
 import { KNOWLEDGE_BASE, ADDITIONAL_INFO } from "../constants";
 
@@ -79,7 +79,6 @@ Analyze the last user message and respond according to your instructions.
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           responseMimeType: "application/json",
-          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
           responseSchema: {
             type: Type.OBJECT,
             properties: {

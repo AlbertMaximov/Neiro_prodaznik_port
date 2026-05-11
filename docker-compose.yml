@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  neuro-sales-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neuro-sales-app
+    ports:
+      - "8080:80"        # Приложение будет доступно по адресу http://localhost:8080
+    environment:
+      # Пробрасываем переменную окружения внутрь контейнера при его запуске
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: unless-stopped
